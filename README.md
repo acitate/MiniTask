@@ -25,5 +25,14 @@ Run the test suite with:
 uv run pytest
 ```
 
-The initial scaffold is intentionally small. The database, task-management
-core, Kivy interface, and Android packaging are being added incrementally.
+## Database layer
+
+The SQLite database is initialized and migrated when `minitask.database.Database`
+is opened. It enables foreign keys and stores schema version 1 in
+`PRAGMA user_version`. Task data is accessed through `TaskRepository`; daily
+assignments are references managed by `DailyPlanRepository`. The repositories
+accept a `Database` instance, and multi-step work can use its transaction
+context manager. Timestamps are UTC ISO 8601 strings and dates use `YYYY-MM-DD`.
+
+The task-management services, Kivy interface, and Android packaging are being
+added incrementally.
