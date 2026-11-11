@@ -73,14 +73,29 @@ jobs:
 
       - name: Install Android build dependencies
         run: |
-          apt_options=(-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
-          if ! sudo apt-get "${apt_options[@]}" update; then
-            echo "apt-get update failed; retrying Ubuntu packages via archive.ubuntu.com"
-            for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list; do
-              [[ -f "$source" ]] || continue
-              sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' "$source"
-            done
-            sudo apt-get "${apt_options[@]}" update
+          apt_options=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+          apt_updated=false
+          for attempt in 1 2 3; do
+            echo "apt-get update attempt ${attempt}/3"
+            if sudo apt-get "${apt_options[@]}" update; then
+              apt_updated=true
+              break
+            fi
+
+            if (( attempt == 1 )); then
+              echo "Switching Ubuntu archive references to archive.ubuntu.com before retrying"
+              for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list; do
+                [[ -f "$source" ]] || continue
+                sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' "$source"
+              done
+            fi
+            if (( attempt < 3 )); then
+              sleep 15
+            fi
+          done
+          if [[ "$apt_updated" != true ]]; then
+            echo "apt-get update failed after three attempts; check runner DNS/network access to Ubuntu repositories" >&2
+            exit 1
           fi
           sudo apt-get install -y \
             autoconf automake autopoint cmake gettext git libffi-dev libncurses5-dev \
