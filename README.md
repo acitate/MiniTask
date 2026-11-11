@@ -135,6 +135,20 @@ release. Build settings are in `buildozer.spec`; see the
 and [python-for-android build options](https://github.com/kivy/python-for-android/blob/develop/doc/source/buildoptions.rst).
 The tested APK SHA-256 is recorded in `CHANGELOG.md`.
 
+## GitHub releases
+
+Pushing a version tag starting with `v` starts
+`.github/workflows/android-release.yml`. Use `vMAJOR.MINOR.PATCH` for a stable
+release and append a SemVer prerelease suffix, such as `v0.1.0-rc.1`, for a
+GitHub prerelease. The tag's base version must match both `pyproject.toml` and
+`buildozer.spec`; update both before tagging a new version.
+
+The workflow runs the locked pytest suite, builds the Android debug APK on
+Ubuntu, and publishes the APK plus a SHA-256 file to the GitHub Release. A
+hyphenated prerelease suffix marks the release as a prerelease automatically.
+The APK is debug-signed for direct installation; this workflow does not use
+production signing secrets or create a store-ready package.
+
 ## First preview release
 
 See [CHANGELOG.md](CHANGELOG.md) for the `0.1.0` preview notes and the

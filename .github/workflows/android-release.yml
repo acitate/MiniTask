@@ -1,0 +1,130 @@
+name: Android release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  android-release:
+    name: Test, build, and publish Android APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14.2"
+
+      - name: Install UV
+        run: python -m pip install --disable-pip-version-check uv==0.13.7
+
+      - name: Validate release tag and app versions
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import tomllib
+          from pathlib import Path
+
+          tag = os.environ["RELEASE_TAG"]
+          match = re.fullmatch(r"v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)", tag)
+          if not match:
+              raise SystemExit(f"Tag {tag!r} must use vMAJOR.MINOR.PATCH[-suffix] format")
+
+          project_version = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+          spec_text = Path("buildozer.spec").read_text()
+          spec_match = re.search(r"(?m)^version\s*=\s*(\S+)\s*$", spec_text)
+          if spec_match is None:
+              raise SystemExit("Could not read version from buildozer.spec")
+
+          tag_base = match.group(1).split("-", 1)[0]
+          if project_version != spec_match.group(1):
+              raise SystemExit(
+                  f"Version mismatch: pyproject.toml={project_version}, "
+                  f"buildozer.spec={spec_match.group(1)}"
+              )
+          if tag_base != project_version:
+              raise SystemExit(
+                  f"Tag version {tag_base} must match app version {project_version}"
+              )
+
+          prerelease = "true" if "-" in match.group(1) else "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"prerelease={prerelease}\n")
+          print(f"Validated {'pre-release' if prerelease == 'true' else 'release'} tag {tag}")
+          PY
+
+      - name: Install UV dependencies and run tests
+        run: |
+          uv sync --locked
+          uv run --locked pytest -q
+
+      - name: Install Android build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf automake autopoint cmake gettext git libffi-dev libncurses5-dev \
+            libncursesw5-dev libssl-dev libtinfo6 openjdk-17-jdk pkg-config \
+            unzip zlib1g-dev zip
+          rustup toolchain install stable --profile minimal
+          rustc --version
+          java -version
+
+      - name: Install pinned Buildozer
+        run: |
+          uv venv --python 3.14 .buildozer-venv
+          .buildozer-venv/bin/python -m ensurepip
+          uv pip install --python .buildozer-venv/bin/python \
+            git+https://github.com/kivy/buildozer@76bac28545c66bbcc671d49aca553a747d69608e \
+            legacy-cgi setuptools cython==0.29.34
+
+      - name: Build Android debug APK
+        run: |
+          . .buildozer-venv/bin/activate
+          set +o pipefail
+          yes | buildozer android debug
+
+      - name: Prepare release assets
+        id: assets
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          shopt -s nullglob
+          apks=(bin/*debug.apk)
+          if (( ${#apks[@]} != 1 )); then
+            printf 'Expected one debug APK in bin/, found %s\n' "${#apks[@]}" >&2
+            exit 1
+          fi
+
+          apk="MiniTask-${RELEASE_TAG}-android.apk"
+          cp "${apks[0]}" "$apk"
+          sha256sum "$apk" > "$apk.sha256"
+          unzip -t "$apk"
+          printf 'apk=%s\n' "$apk" >> "$GITHUB_OUTPUT"
+          printf 'checksum=%s\n' "$apk.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          APK: ${{ steps.assets.outputs.apk }}
+          CHECKSUM: ${{ steps.assets.outputs.checksum }}
+        run: |
+          release_args=("$RELEASE_TAG" "$APK" "$CHECKSUM" --verify-tag --title "$RELEASE_TAG" --generate-notes)
+          if [[ "$PRERELEASE" == "true" ]]; then
+            release_args+=(--prerelease)
+          fi
+          gh release create "${release_args[@]}"
