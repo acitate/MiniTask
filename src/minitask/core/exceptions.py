@@ -21,5 +21,9 @@ class InvalidTaskError(MiniTaskError):
     """Raised when task data does not satisfy the persistence contract."""
 
 
+class TaskHierarchyError(MiniTaskError):
+    """Raised when a task relationship would violate the task hierarchy."""
+
+
 class DatabaseError(MiniTaskError):
     """Raised when the database cannot be initialized or queried safely."""

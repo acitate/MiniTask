@@ -36,3 +36,12 @@ context manager. Timestamps are UTC ISO 8601 strings and dates use `YYYY-MM-DD`.
 
 The task-management services, Kivy interface, and Android packaging are being
 added incrementally.
+
+## Core services
+
+`TaskService` owns task validation, hierarchy, edits, independent completion,
+and All/Long-term hierarchy queries. `DailyPlanService` stores manual date
+assignments, exposes Today and Tomorrow from the current local date, and can
+create and assign a daily task atomically. Deadlines do not create assignments,
+and removing an assignment leaves its task intact. Both services can be used
+without importing Kivy.

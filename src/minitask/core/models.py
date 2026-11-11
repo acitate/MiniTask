@@ -26,3 +26,11 @@ class DailyPlanItem:
     task_id: int
     plan_date: str
     position: int
+
+
+@dataclass(frozen=True, slots=True)
+class TaskTreeNode:
+    """A task and its visible children for hierarchical views."""
+
+    task: Task
+    children: tuple["TaskTreeNode", ...] = ()
