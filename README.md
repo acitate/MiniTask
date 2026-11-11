@@ -34,8 +34,18 @@ assignments are references managed by `DailyPlanRepository`. The repositories
 accept a `Database` instance, and multi-step work can use its transaction
 context manager. Timestamps are UTC ISO 8601 strings and dates use `YYYY-MM-DD`.
 
-The task-management services, Kivy interface, and Android packaging are being
-added incrementally.
+## Interface
+
+The Kivy app opens on Today and provides Today, Tomorrow, Long-term, and All
+through bottom navigation. Daily rows support completion, manual ordering, and
+removing an assignment without deleting its task. Long-term and All show
+expandable task trees. Task details include notes, a calendar deadline picker,
+linked assignment actions, and delete confirmation. Android stores SQLite in
+Kivy's private app data directory. Light and dark Adwaita-inspired palettes are
+available; Android follows the system appearance, while desktop can use
+`MINITASK_THEME=light` or `MINITASK_THEME=dark`.
+
+Android packaging and final UX/reliability refinement remain future phases.
 
 ## Core services
 

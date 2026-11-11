@@ -1,9 +1,11 @@
-"""Initial command-line entry point for MiniTask."""
+"""MiniTask application entry point."""
 
 
 def main() -> None:
-    """Report that the project environment is ready for implementation."""
-    print("MiniTask development environment is ready.")
+    """Start the Kivy application."""
+    from minitask.ui.app import MiniTaskApp
+
+    MiniTaskApp().run()
 
 
 if __name__ == "__main__":
