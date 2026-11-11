@@ -16,3 +16,4 @@ bin/
 
 # Virtual environments
 .venv
+/.buildozer-venv/
