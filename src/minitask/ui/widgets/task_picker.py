@@ -68,7 +68,7 @@ class TaskPicker(ModalView):
         close = Button(
             text="×",
             size_hint_x=None,
-            width=dp(44),
+            width=dp(48),
             background_normal="",
             background_color=(0, 0, 0, 0),
             color=theme.color("secondary"),

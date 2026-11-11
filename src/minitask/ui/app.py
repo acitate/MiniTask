@@ -36,3 +36,9 @@ class MiniTaskApp(App):
         database = getattr(self, "database", None)
         if database is not None:
             database.close()
+
+    def on_resume(self) -> bool:
+        shell = getattr(self, "root", None)
+        if shell is not None:
+            shell.on_app_resume()
+        return True

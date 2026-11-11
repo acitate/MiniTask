@@ -1,5 +1,6 @@
 """Shared Today and Tomorrow task-plan screen."""
 
+import logging
 from datetime import date
 
 from kivy.graphics import Color, Rectangle
@@ -19,6 +20,8 @@ from minitask.ui.widgets.task_dialogs import TaskTitleDialog
 from minitask.ui.widgets.task_item import TaskItem
 from minitask.ui.widgets.task_picker import TaskPicker
 from minitask.ui.widgets.text import align_label
+
+logger = logging.getLogger(__name__)
 
 
 class DailyPlanScreen(Screen):
@@ -126,6 +129,7 @@ class DailyPlanScreen(Screen):
             self._render_tasks()
             self.status.text = ""
         except Exception as exc:
+            logger.exception("Could not load the %s plan", self.title)
             self.show_error(exc)
 
     def _render_tasks(self) -> None:
@@ -168,23 +172,29 @@ class DailyPlanScreen(Screen):
             self.plans.create_task_for_date(title, self.target_date())
             self.refresh()
         except Exception as exc:
+            logger.exception("Could not create a task in the %s plan", self.title)
             self.show_error(exc)
 
     def _open_picker(self) -> None:
-        existing_ids = {task.id for task in self.current_tasks}
-        picker = TaskPicker(
-            self.tasks,
-            self.theme,
-            lambda task_id: self._add_existing(task_id),
-            excluded_ids=existing_ids,
-        )
-        picker.open()
+        try:
+            existing_ids = {task.id for task in self.current_tasks}
+            picker = TaskPicker(
+                self.tasks,
+                self.theme,
+                lambda task_id: self._add_existing(task_id),
+                excluded_ids=existing_ids,
+            )
+            picker.open()
+        except Exception as exc:
+            logger.exception("Could not open the task picker")
+            self.show_error(exc)
 
     def _add_existing(self, task_id: int) -> None:
         try:
             self.plans.add_existing_task(task_id, self.target_date())
             self.refresh()
         except Exception as exc:
+            logger.exception("Could not add a task to the %s plan", self.title)
             self.show_error(exc)
 
     def _set_completed(self, task: Task, completed: bool) -> None:
@@ -193,22 +203,24 @@ class DailyPlanScreen(Screen):
             self.refresh()
             self.shell.refresh_task_views()
         except Exception as exc:
+            logger.exception("Could not update task completion")
             self.show_error(exc)
 
     def _move(self, task_id: int, direction: int) -> None:
-        ordered_ids = [task.id for task in self.current_tasks]
-        index = ordered_ids.index(task_id)
-        target = index + direction
-        if not 0 <= target < len(ordered_ids):
-            return
-        ordered_ids[index], ordered_ids[target] = (
-            ordered_ids[target],
-            ordered_ids[index],
-        )
         try:
+            ordered_ids = [task.id for task in self.current_tasks]
+            index = ordered_ids.index(task_id)
+            target = index + direction
+            if not 0 <= target < len(ordered_ids):
+                return
+            ordered_ids[index], ordered_ids[target] = (
+                ordered_ids[target],
+                ordered_ids[index],
+            )
             self.plans.reorder(self.target_date(), ordered_ids)
             self.refresh()
         except Exception as exc:
+            logger.exception("Could not reorder the %s plan", self.title)
             self.show_error(exc)
 
     def _remove(self, task: Task) -> None:
@@ -216,13 +228,14 @@ class DailyPlanScreen(Screen):
             self.plans.remove_task(task.id, self.target_date())
             self.refresh()
         except Exception as exc:
+            logger.exception("Could not remove a task from the %s plan", self.title)
             self.show_error(exc)
 
     def show_error(self, error: Exception) -> None:
         self.status.text = (
             str(error)
             if isinstance(error, MiniTaskError)
-            else "Could not update tasks."
+            else "Couldn't update this plan. Please try again."
         )
 
 

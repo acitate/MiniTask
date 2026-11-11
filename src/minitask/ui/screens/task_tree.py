@@ -1,5 +1,7 @@
 """Hierarchical list shared by Long-term and All screens."""
 
+import logging
+
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
@@ -15,6 +17,8 @@ from minitask.ui.theme import Theme
 from minitask.ui.widgets.task_dialogs import TaskTitleDialog
 from minitask.ui.widgets.task_item import TaskItem
 from minitask.ui.widgets.text import align_label
+
+logger = logging.getLogger(__name__)
 
 
 class TaskTreeScreen(Screen):
@@ -130,6 +134,7 @@ class TaskTreeScreen(Screen):
                     self._append_node(node, depth=0)
             self.status.text = ""
         except Exception as exc:
+            logger.exception("Could not load the %s task list", self.title)
             self.show_error(exc)
 
     def _append_node(self, node: TaskTreeNode, depth: int) -> None:
@@ -167,6 +172,7 @@ class TaskTreeScreen(Screen):
             self.refresh()
             self.shell.refresh_task_views()
         except Exception as exc:
+            logger.exception("Could not update task completion")
             self.show_error(exc)
 
     def _new_task(self) -> None:
@@ -184,6 +190,7 @@ class TaskTreeScreen(Screen):
                 self.expanded.add(task.id)
             self.refresh()
         except Exception as exc:
+            logger.exception("Could not create a task")
             self.show_error(exc)
 
     def _new_subtask(self, parent: Task) -> None:
@@ -201,13 +208,14 @@ class TaskTreeScreen(Screen):
                 self.expanded.add(parent_id)
             self.refresh()
         except Exception as exc:
+            logger.exception("Could not create a subtask")
             self.show_error(exc)
 
     def show_error(self, error: Exception) -> None:
         self.status.text = (
             str(error)
             if isinstance(error, MiniTaskError)
-            else "Could not update tasks."
+            else "Couldn't update this task list. Please try again."
         )
 
     @staticmethod

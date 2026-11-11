@@ -1,5 +1,7 @@
 """Task details editor and linked daily assignment actions."""
 
+import logging
+
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
@@ -18,6 +20,8 @@ from minitask.ui.theme import Theme
 from minitask.ui.widgets.date_picker import CalendarPicker
 from minitask.ui.widgets.task_dialogs import ConfirmDialog, styled_button
 from minitask.ui.widgets.text import align_label
+
+logger = logging.getLogger(__name__)
 
 
 class TaskDetailsScreen(Screen):
@@ -52,7 +56,7 @@ class TaskDetailsScreen(Screen):
         back = Button(
             text="‹",
             size_hint_x=None,
-            width=dp(44),
+            width=dp(48),
             background_normal="",
             background_color=theme.color("elevated"),
             color=theme.color("accent"),
@@ -205,16 +209,20 @@ class TaskDetailsScreen(Screen):
     def load(self) -> None:
         if self.task_id is None:
             return
-        task = self.tasks.get_task(self.task_id)
-        self.title_input.text = task.title
-        self.notes_input.text = task.notes or ""
-        self.deadline_input.text = task.due_date or ""
-        self.completion.active = task.is_completed
-        if task.parent_id is None:
-            self.parent_label.text = "No parent"
-        else:
-            self.parent_label.text = self.tasks.get_task(task.parent_id).title
-        self.status.text = ""
+        try:
+            task = self.tasks.get_task(self.task_id)
+            self.title_input.text = task.title
+            self.notes_input.text = task.notes or ""
+            self.deadline_input.text = task.due_date or ""
+            self.completion.active = task.is_completed
+            if task.parent_id is None:
+                self.parent_label.text = "No parent"
+            else:
+                self.parent_label.text = self.tasks.get_task(task.parent_id).title
+            self.status.text = ""
+        except Exception as exc:
+            logger.exception("Could not load task details")
+            self.show_error(exc)
 
     def save(self) -> None:
         if self.task_id is None:
@@ -231,6 +239,7 @@ class TaskDetailsScreen(Screen):
             self.shell.refresh_task_views()
             self.shell.go_back()
         except Exception as exc:
+            logger.exception("Could not save task details")
             self.show_error(exc)
 
     def _open_date_picker(self) -> None:
@@ -253,6 +262,7 @@ class TaskDetailsScreen(Screen):
             self.status.color = self.theme.color("success")
             self.status.text = "Added to Today."
         except Exception as exc:
+            logger.exception("Could not add task to Today")
             self.show_error(exc)
 
     def _add_to_tomorrow(self) -> None:
@@ -264,18 +274,23 @@ class TaskDetailsScreen(Screen):
             self.status.color = self.theme.color("success")
             self.status.text = "Added to Tomorrow."
         except Exception as exc:
+            logger.exception("Could not add task to Tomorrow")
             self.show_error(exc)
 
     def _confirm_delete(self) -> None:
         if self.task_id is None:
             return
-        task = self.tasks.get_task(self.task_id)
-        dialog = ConfirmDialog(
-            self.theme,
-            f"Delete ‘{task.title}’, its subtasks, and daily assignments?",
-            self._delete,
-        )
-        dialog.open()
+        try:
+            task = self.tasks.get_task(self.task_id)
+            dialog = ConfirmDialog(
+                self.theme,
+                f"Delete ‘{task.title}’, its subtasks, and daily assignments?",
+                self._delete,
+            )
+            dialog.open()
+        except Exception as exc:
+            logger.exception("Could not prepare task deletion")
+            self.show_error(exc)
 
     def _delete(self) -> None:
         if self.task_id is None:
@@ -285,10 +300,13 @@ class TaskDetailsScreen(Screen):
             self.shell.refresh_task_views()
             self.shell.go_back()
         except Exception as exc:
+            logger.exception("Could not delete task")
             self.show_error(exc)
 
     def show_error(self, error: Exception) -> None:
         self.status.color = self.theme.color("destructive")
         self.status.text = (
-            str(error) if isinstance(error, MiniTaskError) else "Could not save task."
+            str(error)
+            if isinstance(error, MiniTaskError)
+            else "Couldn't save this task. Please try again."
         )

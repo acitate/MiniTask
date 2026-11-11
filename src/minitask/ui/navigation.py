@@ -1,5 +1,6 @@
 """Four-destination bottom navigation and detail-screen routing."""
 
+from kivy.clock import Clock
 from kivy.graphics import Color, InstructionGroup, Line, Rectangle
 from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
@@ -36,6 +37,7 @@ class NavigationShell(BoxLayout):
         self.plan_service = DailyPlanService(
             database, task_service=self.task_service
         )
+        self._observed_date = self.plan_service.today_date()
         self.current_tab = "today"
         self.return_tab = "today"
         self._tab_buttons: dict[str, Button] = {}
@@ -92,6 +94,7 @@ class NavigationShell(BoxLayout):
             self.nav_bar.add_widget(button)
         self.add_widget(self.nav_bar)
         Window.bind(on_keyboard=self._on_keyboard)
+        Clock.schedule_interval(self._check_date_change, 30)
 
     def _update_nav_canvas(self, *_args) -> None:
         self._nav_background.pos = self.nav_bar.pos
@@ -129,6 +132,17 @@ class NavigationShell(BoxLayout):
             self.all_screen,
         ):
             screen.refresh()
+
+    def on_app_resume(self) -> None:
+        """Refresh date-relative views after the app returns from background."""
+        self._check_date_change(0)
+
+    def _check_date_change(self, _elapsed: float) -> None:
+        current_date = self.plan_service.today_date()
+        if current_date != self._observed_date:
+            self._observed_date = current_date
+            self.today_screen.refresh()
+            self.tomorrow_screen.refresh()
 
     def _on_keyboard(self, _window, key, *_args) -> bool:
         if key == 27 and self.manager.current == "task_details":

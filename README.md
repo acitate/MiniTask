@@ -45,7 +45,11 @@ Kivy's private app data directory. Light and dark Adwaita-inspired palettes are
 available; Android follows the system appearance, while desktop can use
 `MINITASK_THEME=light` or `MINITASK_THEME=dark`.
 
-Android packaging and final UX/reliability refinement remain future phases.
+Today and Tomorrow refresh after a local date change, including after the app
+returns from the background. Unexpected UI and storage errors are logged for
+diagnosis and shown as concise recovery messages. Transaction and persistence
+tests cover rollback after interrupted work and reopening the local database.
+Android packaging remains a future phase.
 
 ## Core services
 

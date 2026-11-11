@@ -19,7 +19,7 @@ def _button(
     callback: Callable,
     *,
     color: str = "secondary",
-    width: int = 42,
+    width: int = 48,
 ) -> Button:
     button = Button(
         text=text,
@@ -86,7 +86,7 @@ class TaskItem(BoxLayout):
         self.checkbox = CheckBox(
             active=task.is_completed,
             size_hint_x=None,
-            width=dp(44),
+            width=dp(48),
             color=theme.color("accent"),
         )
         self.checkbox.bind(

@@ -47,10 +47,10 @@ class Theme:
     spacing = 8
     page_padding = 16
     section_spacing = 12
-    row_height = 58
+    row_height = 64
     corner_radius = 12
     touch_target = 48
-    compact_action = 40
+    compact_action = 48
     navigation_height = 70
     field_height = 48
 
