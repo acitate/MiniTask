@@ -19,3 +19,4 @@ android.allow_backup = False
 
 # Python 3.14 Android builds use python-for-android's current development branch.
 p4a.branch = develop
+p4a.commit = 1c9a4b4f817847bd8505d972d1a0e6f965929a88
