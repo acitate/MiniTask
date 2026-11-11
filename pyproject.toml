@@ -1,0 +1,24 @@
+[project]
+name = "minitask"
+version = "0.1.0"
+description = "An offline-first task planner for desktop and Android"
+readme = "README.md"
+authors = [
+    { name = "acitate", email = "m.parsa.kolivand@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "kivy>=2.3.2,<3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3,<9",
+]
+
+[project.scripts]
+minitask = "minitask:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
